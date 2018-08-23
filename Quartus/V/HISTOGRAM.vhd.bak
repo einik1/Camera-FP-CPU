@@ -1,0 +1,54 @@
+--25.5.14
+--Boris Braginsky
+--==========Library===========
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use IEEE.std_logic_signed.all; 
+use ieee.std_logic_arith.all;
+--use ieee.math_real.all;
+--use ieee.std_logic_unsigned.all;
+
+
+entity HISTOGRAM is
+port(
+  garyscale: in std_logic_vector(11 downto 0); 
+	iX_Cont,	iY_Cont: in std_logic_vector(10 downto 0); 
+	iDVAL, iCLK, iRST: in std_logic);
+end HISTOGRAM; 
+
+
+architecture behv of HISTOGRAM is
+
+
+
+type 		CArray is array (0 to 11) of integer range 0 to 307200;
+--type 		imgArray is array (0 to 11) of integer range 0 to 307200;
+signal 	mDATA_0: std_logic_vector(11 downto 0);
+signal 	countArray : CArray;
+signal 	imgArray : CArray;
+
+begin
+
+process(iCLK)
+begin
+	IF (iDVAL = '1') THEN
+		 FOR i in 0 to 15 LOOP
+			IF((garyscale >= i*162) and (garyscale < (i+1)*162) ) THEN countArray(i) <= countArray(i) + 1;
+			END IF;
+		END LOOP;		
+	ELSIF ((iX_Cont = "00000000000") and (iY_Cont = "00000000000")) THEN imgArray <= countArray;
+	END IF;
+end process;
+
+
+
+end behv;
+
+
+
+
+
+
+
+

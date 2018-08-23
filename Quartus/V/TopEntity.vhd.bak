@@ -1,0 +1,134 @@
+-- libraries decleration
+library ieee;
+use ieee.std_logic_1164.all;
+--use ieee.std_logic_arith.all;
+use ieee.math_real.all;
+use ieee.numeric_std.all; --Need for the shif
+use ieee.std_logic_signed;
+use ieee.std_logic_unsigned.all;
+
+
+
+
+entity TopEntity is 
+	port (
+	clk, reset,SW8   : IN     STD_LOGIC;
+  SevenSeg     : OUT    STD_LOGIC_VECTOR (27 downto 0)   
+	);
+end entity;
+
+-- Architecture Definition
+architecture rtl of TopEntity is 
+
+-- componenets
+COMPONENT MIPS IS
+
+	PORT( nreset 					: IN 	STD_LOGIC ;
+			clock						: IN 	STD_LOGIC ;
+		 --Output important signals to pins for easy display in Simulator
+		PC								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+		ALU_result_out, read_data_1_out, read_data_2_out, write_data_out,	
+     	Instruction_out					: OUT 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+		Branch_out, Zero_out, Memwrite_out, 
+		Regwrite_out					: OUT 	STD_LOGIC 
+		);
+END 	COMPONENT;
+
+
+COMPONENT Seven_Segment_converter is 
+	port (
+	  Bnumber : in STD_LOGIC_VECTOR (3 downto 0);
+    Seven_Segment : out STD_LOGIC_VECTOR (6 downto 0)	  
+	);
+END COMPONENT;
+
+COMPONENT DFF_Register is 
+			generic (N : integer);
+			port (clock, rst, ld : in std_logic; -- clock reset and load
+					d : in STD_LOGIC_VECTOR(N-1 downto 0) := (others => '0'); -- data
+					q : out STD_LOGIC_VECTOR(N-1 downto 0):= (others => '0')); -- output
+	end COMPONENT;
+	
+	COMPONENT mac_register is 
+	generic (N : integer);
+	port (clk, rst, ld : in std_logic; -- clock reset and load
+	d : in std_logic_vector(2*N-1 downto 0) := (others => '0'); -- data
+	q : out std_logic_vector(2*N-1 downto 0):= (others => '0')); -- output
+end COMPONENT;
+
+
+--Signals
+SIGNAL  clock,nreset,alowLine:  STD_LOGIC;
+SIGNAL  DFF1out:  STD_LOGIC_VECTOR(1 downto 0);
+SIGNAL PC								:   STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+SIGNAL		ALU_result_out, read_data_1_out, read_data_2_out, write_data_out,	Instruction_out					:  	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+SIGNAL		Branch_out, Zero_out, Memwrite_out,	Regwrite_out					:  	STD_LOGIC;
+SIGNAL      SevenSegS     :     STD_LOGIC_VECTOR (15 downto 0); 
+SIGNAL      dffIEEEOUT     :     STD_LOGIC_VECTOR (15 downto 0); 
+  
+
+	BEGIN
+	  
+	  nreset <= not(reset);
+	  clock <= clk WHEN DFF1out = "11"
+			ELSE '0';
+	  
+	  	DF1: DFF_Register  
+	generic MAP(2)
+	port MAP(clock => clk,
+			rst =>'0',
+			ld =>nreset,
+			d => "11" , 
+			q => DFF1out); 
+			
+			
+	
+  mps: MIPS 
+	PORT MAP( 
+	  nreset => nreset,	
+		clock=>clock,	
+		PC=>PC,	
+		ALU_result_out=>ALU_result_out, 
+		read_data_1_out=>read_data_1_out, 
+		read_data_2_out=>read_data_2_out, 
+		write_data_out=>write_data_out,	
+   	Instruction_out=>Instruction_out,		
+		Branch_out=>Branch_out, 
+		Zero_out=>Zero_out, 
+		Memwrite_out=>Memwrite_out, 
+		Regwrite_out=>Regwrite_out
+		);
+		
+		SevenSegS <= Instruction_out(31 downto 16) WHEN SW8 = '1'
+		ELSE Instruction_out(15 downto 0);
+		
+		alowLine <= DFF1out(0) and Memwrite_out;
+		
+	dffIEEE:  mac_register  
+	generic map (8)
+	port map (clk => clock, 
+	rst => '0', 
+	ld => alowLine, -- clock reset and load
+	d => SevenSegS, -- data
+	q => dffIEEEOUT); -- output
+
+	
+  SSC1: Seven_Segment_converter  
+	port map (dffIEEEOUT (3 downto 0),SevenSeg(6 downto 0));
+ 
+ SSC2: Seven_Segment_converter  
+	port map (dffIEEEOUT (7 downto 4),SevenSeg(13 downto 7));
+	 
+	SSC3: Seven_Segment_converter  
+	port map (dffIEEEOUT (11 downto 8),SevenSeg(20 downto 14));
+	 
+	 SSC4: Seven_Segment_converter  
+	port map (dffIEEEOUT (15 downto 12),SevenSeg(27 downto 21));
+	
+end rtl; 
+
+
+
+
+
+

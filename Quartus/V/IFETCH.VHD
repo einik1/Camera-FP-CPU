@@ -1,0 +1,94 @@
+-- Ifetch module (provides the PC and instruction 
+--memory for the MIPS computer)
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.STD_LOGIC_ARITH.ALL;
+USE IEEE.STD_LOGIC_UNSIGNED.ALL; -- stop!!!!!!!!!!!!!!!!!!
+LIBRARY altera_mf;
+USE altera_mf.altera_mf_components.all;
+
+ENTITY Ifetch IS
+	PORT(	SIGNAL InstructionF 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+        	SIGNAL PC_plus_4_outF 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL PCBranchD 		: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			SIGNAL interApt             : in STD_LOGIC_VECTOR( 15 DOWNTO 0 );
+        	SIGNAL PCSrcD 			: IN 	STD_LOGIC;
+        	--SIGNAL BranchD 			: IN 	STD_LOGIC;
+        	SIGNAL StallF    : IN STD_LOGIC;
+      	SIGNAL PC_outF 			: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL clock, reset 	: IN 	STD_LOGIC
+			--SIGNAL PCFFF : OUT 	STD_LOGIC_VECTOR( 7 DOWNTO 0 )
+			);
+END Ifetch;
+
+ARCHITECTURE behavior OF Ifetch IS
+	SIGNAL PC, PCDFF, PC_4		 				: STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+	SIGNAL Mem_Addr							 	: STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	SIGNAL RD									 	: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	
+BEGIN
+						--ROM for Instruction Memory
+inst_memory: altsyncram
+	
+	GENERIC MAP (
+			operation_mode => "ROM",
+			width_a => 32,
+			widthad_a => 8,
+			lpm_type => "altsyncram",
+			outdata_reg_a => "UNREGISTERED",
+			init_file => "C:/Users/einik/Desktop/program.hex",
+			intended_device_family => "Cyclone"
+	)
+	PORT MAP
+	(
+			clock0     => clock,
+			address_a 	=> Mem_Addr, 
+			q_a 			=> RD
+	);
+		
+			--SET ADDRESS FOR INTERRUPT ISR
+			InstructionF <= RD; 				--WHEN interrupt = '0' ELSE	X"00000000"
+									
+			PC_outF 	<= PCDFF;
+			-- Instructions always start on word address - not byte
+			
+			PC(1 DOWNTO 0) <= "00";
+			PCDFF(1 DOWNTO 0) <= "00";
+
+			-- send address to inst. memory address register
+			Mem_Addr <= PC(9 DOWNTO 2);
+			
+			-- Adder to increment PC by 4        
+      	PC_4( 9 DOWNTO 2 )  <= 	PCDFF( 9 DOWNTO 2 ) + 1;
+       	PC_4( 1 DOWNTO 0 )  <= "00";
+				
+			
+			PC_plus_4_outF <= PC_4;
+
+			-- Mux at start to select Branch Address or PC + 4       
+			PC( 9 DOWNTO 2 )  <= X"00" 							WHEN Reset = '1' 			ELSE   
+										X"00" 							WHEN interApt = "1111111111111111" 			ELSE
+										PCDFF( 9 DOWNTO 2 ) 			WHEN StallF ='1' 			ELSE
+										PCBranchD  						WHEN (PCSrcD = '1') 		ELSE 
+										PC_4( 9 DOWNTO 2 ) ;
+										
+			
+			
+	PROCESS
+		BEGIN
+			WAIT UNTIL rising_edge(clock);
+			
+			IF reset = '1' or interApt = "1111111111111111" THEN
+				   PCDFF( 9 DOWNTO 2) <= "00000000";
+			ELSE 	
+					if  (StallF = '1') then
+						--stall 
+					else
+						PCDFF( 9 DOWNTO 2 ) <= PC( 9 DOWNTO 2 );
+												
+					end if;
+					
+			END IF;
+	END PROCESS;
+END behavior;
+

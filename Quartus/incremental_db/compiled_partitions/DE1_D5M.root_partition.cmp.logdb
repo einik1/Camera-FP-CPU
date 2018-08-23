@@ -1,0 +1,6 @@
+v1
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,TopEntity:u9|MIPS:mps|Execute:EXE|IEEE_Mult:IEEE_MUL|lpm_mult:Mult0|mult_p8t:auto_generated|mac_out2,
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,TopEntity:u9|MIPS:mps|Execute:EXE|IEEE_Mult:IEEE_MUL|lpm_mult:Mult0|mult_p8t:auto_generated|mac_out8,
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,TopEntity:u9|MIPS:mps|Execute:EXE|IEEE_Mult:IEEE_MUL|lpm_mult:Mult0|mult_p8t:auto_generated|mac_out4,
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,TopEntity:u9|MIPS:mps|Execute:EXE|IEEE_Mult:IEEE_MUL|lpm_mult:Mult0|mult_p8t:auto_generated|mac_out6,
+PORT_SWAPPING,PORT_SWAP_TYPE_DSPMULT,TopEntity:u9|MIPS:mps|Execute:EXE|IEEE_Mult:IEEE_MUL|lpm_mult:Mult0|mult_p8t:auto_generated|mac_mult5,
